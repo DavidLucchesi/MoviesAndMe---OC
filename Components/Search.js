@@ -10,6 +10,8 @@ class Search extends React.Component {
   constructor(props) {
     super(props)
     this.searchedText = ""
+    this.page = 0
+    this.totalPages = 0
     this.state = {
       films: [],
       isLoading: false
@@ -18,10 +20,12 @@ class Search extends React.Component {
 
   _loadFilms() {
     if (this.searchedText.length > 0) {
-      this.setState({ isLoading: true, films:[] })
-      getFilmsFromApiWithSearchedText(this.searchedText).then(data => {
+      this.setState({ isLoading: true })
+      getFilmsFromApiWithSearchedText(this.searchedText, this.page+1).then(data => {
+        this.page = data.page
+        this.totalPages = data.total_pages
         this.setState({
-          films: data.results,
+          films: [ ...this.state.films, ...data.results ],
           isLoading: false
         })
       })
@@ -30,6 +34,16 @@ class Search extends React.Component {
 
   _searchTextInputChanged(text) {
     this.searchedText = text
+  }
+
+  _searchFilms() {
+    this.page = 0
+    this.totalPages = 0
+    this.setState({
+      films: [],
+    }, () => {
+      this._loadFilms()
+    })
   }
 
   _displayLoading() {
@@ -49,18 +63,24 @@ class Search extends React.Component {
       style={styles.textinput}
       placeholder='Titre du film'
       onChangeText={(text) => this._searchTextInputChanged(text)}
-      onSubmitEditing={() => this._loadFilms()}
+      onSubmitEditing={() => this._searchFilms()}
       />
-      <Button style={{ height: 50 }} title='Rechercher' onPress={() => this._loadFilms()}/>
+      <Button style={{ height: 50 }} title='Rechercher' onPress={() => this._searchFilms()}/>
       <FlatList
       data={this.state.films}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({item}) => <FilmItem film={item}/>}
-      />
-      {this._displayLoading()}
-      </View>
-    )
-  }
+      onEndReachedThreshold={0.5}
+      onEndReached={() => {
+        if (this.state.films.length > 0 && this.page < this.totalPages) { // On vérifie également qu'on n'a pas atteint la fin de la pagination (totalPages) avant de charger plus d'éléments
+        this._loadFilms()
+      }
+    }}
+    />
+    {this._displayLoading()}
+    </View>
+  )
+}
 }
 
 const styles = StyleSheet.create({
