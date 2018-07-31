@@ -28,7 +28,6 @@ class Search extends React.Component {
   }
 
   render() {
-    console.log("RENDER")
     return (
       <View style={styles.main_container}>
         <TextInput
